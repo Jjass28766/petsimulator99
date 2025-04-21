@@ -1,168 +1,95 @@
--- PetMorphGUI by BRIXMODZ
--- Compatible with Solara
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local Players = game:GetService("Players")
 
--- GUI Setup
-local player = game:GetService("Players").LocalPlayer
-local gui = Instance.new("ScreenGui", player:WaitForChild("PlayerGui"))
-gui.Name = "PetMorphGUI"
-gui.ResetOnSpawn = false
+local player = Players.LocalPlayer
+local lib = require(ReplicatedStorage:WaitForChild("Library"))
 
-local frame = Instance.new("Frame", gui)
-frame.Size = UDim2.new(0, 250, 0, 400)
-frame.Position = UDim2.new(0, 10, 0.5, -180)
-frame.BackgroundColor3 = Color3.fromRGB(25, 25, 25)
-frame.BorderSizePixel = 0
+-- Create a simple UI
+local screenGui = Instance.new("ScreenGui")
+screenGui.Parent = player:WaitForChild("PlayerGui")
 
-local title = Instance.new("TextLabel", frame)
-title.Size = UDim2.new(1, 0, 0, 30)
-title.Text = "🐾 Pet Morph GUI"
-title.Font = Enum.Font.GothamBold
-title.TextScaled = true
-title.TextColor3 = Color3.new(1, 1, 1)
-title.BackgroundTransparency = 1
+local frame = Instance.new("Frame")
+frame.Size = UDim2.new(0, 300, 0, 400)
+frame.Position = UDim2.new(0.5, -150, 0.5, -200)
+frame.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
+frame.Parent = screenGui
 
--- Inventory Pet Selection Dropdown
-local inventoryFrame = Instance.new("Frame", frame)
-inventoryFrame.Size = UDim2.new(1, -20, 0, 100)
-inventoryFrame.Position = UDim2.new(0, 10, 0, 40)
-inventoryFrame.BackgroundColor3 = Color3.fromRGB(40, 40, 40)
-inventoryFrame.BorderSizePixel = 0
+-- Create text boxes for pet names
+local fromPetLabel = Instance.new("TextLabel")
+fromPetLabel.Size = UDim2.new(0, 250, 0, 30)
+fromPetLabel.Position = UDim2.new(0, 25, 0, 50)
+fromPetLabel.Text = "From Pet Name:"
+fromPetLabel.Parent = frame
 
-local inventoryLabel = Instance.new("TextLabel", inventoryFrame)
-inventoryLabel.Size = UDim2.new(1, 0, 0, 20)
-inventoryLabel.Text = "Select Pet from Inventory"
-inventoryLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
-inventoryLabel.TextScaled = true
-inventoryLabel.BackgroundTransparency = 1
+local fromPetTextBox = Instance.new("TextBox")
+fromPetTextBox.Size = UDim2.new(0, 250, 0, 30)
+fromPetTextBox.Position = UDim2.new(0, 25, 0, 80)
+fromPetTextBox.PlaceholderText = "Enter From Pet Name"
+fromPetTextBox.Parent = frame
 
-local inventoryList = Instance.new("UIListLayout", inventoryFrame)
+local toPetLabel = Instance.new("TextLabel")
+toPetLabel.Size = UDim2.new(0, 250, 0, 30)
+toPetLabel.Position = UDim2.new(0, 25, 0, 120)
+toPetLabel.Text = "To Pet Name:"
+toPetLabel.Parent = frame
 
-local inventoryPetList = {} -- List to store pet buttons
+local toPetTextBox = Instance.new("TextBox")
+toPetTextBox.Size = UDim2.new(0, 250, 0, 30)
+toPetTextBox.Position = UDim2.new(0, 25, 0, 150)
+toPetTextBox.PlaceholderText = "Enter To Pet Name"
+toPetTextBox.Parent = frame
 
--- Function to populate the pet inventory
-local function populateInventoryPets()
-    for _, button in pairs(inventoryPetList) do
-        button:Destroy() -- Clear existing pet buttons
-    end
-    inventoryPetList = {}
+-- Create a button to trigger the swap
+local swapButton = Instance.new("TextButton")
+swapButton.Size = UDim2.new(0, 250, 0, 50)
+swapButton.Position = UDim2.new(0, 25, 0, 200)
+swapButton.Text = "Swap Pets"
+swapButton.BackgroundColor3 = Color3.fromRGB(0, 255, 0)
+swapButton.Parent = frame
 
-    -- Assuming pets are stored in player's Backpack
-    local pets = player.Backpack:GetChildren()
-    for _, pet in ipairs(pets) do
-        if pet:IsA("Model") then
-            -- Create buttons for each pet in inventory
-            local petButton = Instance.new("TextButton", inventoryFrame)
-            petButton.Size = UDim2.new(1, -20, 0, 30)
-            petButton.Text = pet.Name
-            petButton.TextScaled = true
-            petButton.Font = Enum.Font.Gotham
-            petButton.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
-            petButton.TextColor3 = Color3.fromRGB(255, 255, 255)
-            petButton.BorderSizePixel = 0
-            petButton.MouseButton1Click:Connect(function()
-                -- Set the selected pet
-                selectedPetName.Text = pet.Name
-            end)
-            table.insert(inventoryPetList, petButton)
+-- Create a text label to show messages
+local resultLabel = Instance.new("TextLabel")
+resultLabel.Size = UDim2.new(0, 250, 0, 30)
+resultLabel.Position = UDim2.new(0, 25, 0, 270)
+resultLabel.Text = ""
+resultLabel.TextColor3 = Color3.fromRGB(255, 0, 0)
+resultLabel.Parent = frame
+
+-- Function to swap pets
+local function swapPets(fromPet, toPet)
+    -- Ensure that both pets exist in the directory
+    if lib.Directory.Pets[fromPet] and lib.Directory.Pets[toPet] then
+        -- Create a backup of the 'toPet' data
+        local toPetData = lib.Directory.Pets[toPet]
+
+        -- Clear all existing data of 'fromPet'
+        for i, v in pairs(lib.Directory.Pets[fromPet]) do
+            lib.Directory.Pets[fromPet][i] = nil
         end
+
+        -- Copy over 'toPet' data to 'fromPet'
+        for i, v in pairs(toPetData) do
+            lib.Directory.Pets[fromPet][i] = v
+        end
+
+        -- Show success message
+        resultLabel.Text = fromPet .. " has been replaced with " .. toPet
+        resultLabel.TextColor3 = Color3.fromRGB(0, 255, 0)
+    else
+        -- Show error message if pets don't exist
+        resultLabel.Text = "Pet not found in directory!"
+        resultLabel.TextColor3 = Color3.fromRGB(255, 0, 0)
     end
 end
 
--- Scanning all pets in the game
-local function populateGamePets()
-    for _, button in pairs(gamePetList) do
-        button:Destroy() -- Clear existing game pet buttons
+-- Connect button click to swapping function
+swapButton.MouseButton1Click:Connect(function()
+    local fromPet = fromPetTextBox.Text
+    local toPet = toPetTextBox.Text
+    if fromPet ~= "" and toPet ~= "" then
+        swapPets(fromPet, toPet)
+    else
+        resultLabel.Text = "Please enter valid pet names!"
+        resultLabel.TextColor3 = Color3.fromRGB(255, 0, 0)
     end
-    gamePetList = {}
-
-    -- Scan the game (Workspace) for pets
-    for _, pet in pairs(workspace:GetDescendants()) do
-        if pet:IsA("Model") and pet:FindFirstChild("HumanoidRootPart") then
-            -- Create buttons for each pet in the game
-            local petButton = Instance.new("TextButton", gameFrame)
-            petButton.Size = UDim2.new(1, -20, 0, 30)
-            petButton.Text = pet.Name
-            petButton.TextScaled = true
-            petButton.Font = Enum.Font.Gotham
-            petButton.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
-            petButton.TextColor3 = Color3.fromRGB(255, 255, 255)
-            petButton.BorderSizePixel = 0
-            petButton.MouseButton1Click:Connect(function()
-                -- Set the selected pet from the game
-                selectedGamePetName.Text = pet.Name
-            end)
-            table.insert(gamePetList, petButton)
-        end
-    end
-end
-
--- Morph function to change pet visuals
-local function morphPets(morphType)
-    local targetPetName = selectedPetName.Text
-    local visualPetName = newNameInput.Text ~= "" and newNameInput.Text or morphType
-    local settings = morphSettings[morphType]
-
-    if not settings then return end
-
-    -- Find the selected pet in inventory or in game
-    local targetPet
-    for _, pet in pairs(player.Backpack:GetChildren()) do
-        if pet.Name == targetPetName then
-            targetPet = pet
-            break
-        end
-    end
-
-    if not targetPet then
-        for _, pet in pairs(workspace:GetDescendants()) do
-            if pet:IsA("Model") and pet.Name == selectedGamePetName.Text then
-                targetPet = pet
-                break
-            end
-        end
-    end
-
-    if not targetPet then return end
-
-    -- Apply the visual transformation
-    for _, part in ipairs(targetPet:GetDescendants()) do
-        if part:IsA("BasePart") then
-            part.Size = part.Size * settings.scale
-        elseif part:IsA("SpecialMesh") then
-            part.Scale = part.Scale * Vector3.new(settings.scale, settings.scale, settings.scale)
-        end
-    end
-
-    -- Update pet's visual name
-    targetPet.Name = visualPetName
-
-    print("✅ Pet '" .. targetPetName .. "' visually morphed to: " .. visualPetName)
-end
-
--- Morph buttons
-local morphSettings = {
-    HUGE = {scale = 2, color = Color3.new(1, 1, 0)},
-    TITANIC = {scale = 3.5, color = Color3.new(0, 1, 1)},
-    GARGANTUAN = {scale = 5, color = Color3.new(1, 0.2, 0.2)},
-}
-
--- Create morph type buttons
-local morphs = {"HUGE", "TITANIC", "GARGANTUAN"}
-for i, morph in ipairs(morphs) do
-    local btn = Instance.new("TextButton", frame)
-    btn.Size = UDim2.new(1, -20, 0, 40)
-    btn.Position = UDim2.new(0, 10, 0, 250 + (i - 1) * 45)
-    btn.Text = "Make " .. morph
-    btn.Font = Enum.Font.Gotham
-    btn.TextScaled = true
-    btn.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
-    btn.TextColor3 = Color3.new(1,1,1)
-    btn.BorderSizePixel = 0
-    btn.MouseButton1Click:Connect(function()
-        morphPets(morph)
-    end)
-end
-
--- Trigger inventory population
-populateInventoryPets()
-populateGamePets()
+end)
